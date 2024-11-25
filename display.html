@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scheduled Files Display</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            height: 100vh;
+            background-color: #f0f0f0;
+        }
+        .sidebar {
+            width: 250px;
+            background-color: #2c3e50;
+            color: white;
+            padding: 20px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            position: fixed;
+            height: 100vh;
+        }
+        .main-content {
+            margin-left: 250px;
+            flex-grow: 1;
+            padding: 20px;
+            overflow-y: auto;
+            height: 100vh;
+            box-sizing: border-box;
+        }
+        .schedules-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            padding: 20px 0;
+            box-sizing: border-box;
+        }
+        .schedule-container {
+            background-color: white;
+            border: 1px solid #ddd;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-y: auto;
+            font-size: 14px;
+            line-height: 1.4;
+            min-height: 200px;
+            height: auto;
+            box-sizing: border-box;
+        }
+        h1 {
+            color: #ecf0f1;
+            margin-top: 0;
+            margin-bottom: 20px;
+        }
+        #currentTime {
+            font-size: 1.2em;
+            margin-bottom: 20px;
+        }
+        #fileInfo {
+            background-color: #34495e;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+        #scheduleDuration {
+            background-color: #34495e;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+            font-size: 1.1em;
+        }
+        .countdown {
+            color: #3498db;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+        .no-schedules {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 20px;
+            background-color: white;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <h1>Display Dashboard</h1>
+        <div id="currentTime"></div>
+        <div id="fileInfo"></div>
+        <div id="scheduleDuration">
+            <h2>Schedule Duration</h2>
+            <div class="countdown"></div>
+        </div>
+    </div>
+    <div class="main-content">
+        <div id="scheduledFiles" class="schedules-container"></div>
+    </div>
+
+    <script>
+        function updateCurrentTime() {
+            const now = new Date();
+            document.getElementById('currentTime').textContent = now.toLocaleString();
+        }
+
+        function formatDuration(end) {
+            const now = new Date();
+            const diff = end - now;
+            
+            if (diff <= 0) return "Schedule ended";
+            
+            const hours = Math.floor(diff / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+            
+            return `${hours}h ${minutes}m ${seconds}s remaining`;
+        }
+
+        function updateDuration() {
+            const scheduledFiles = JSON.parse(localStorage.getItem('scheduledFiles')) || [];
+            const now = new Date();
+            const currentFile = scheduledFiles.find(file => {
+                const start = new Date(file.scheduleStart);
+                const end = new Date(file.scheduleEnd);
+                return now >= start && now <= end;
+            });
+
+            const countdownElement = document.querySelector('.countdown');
+            if (currentFile) {
+                const end = new Date(currentFile.scheduleEnd);
+                countdownElement.textContent = formatDuration(end);
+            } else {
+                countdownElement.textContent = "No active schedule";
+            }
+        }
+
+        function displayScheduledFiles() {
+            const scheduledFiles = JSON.parse(localStorage.getItem('scheduledFiles')) || [];
+            const scheduledFilesContainer = document.getElementById('scheduledFiles');
+            const fileInfoContainer = document.getElementById('fileInfo');
+            
+            scheduledFilesContainer.innerHTML = '';
+            fileInfoContainer.innerHTML = '';
+            
+            const now = new Date();
+            let fileInfo = '';
+            let scheduleElements = [];
+            
+            scheduledFiles.forEach(file => {
+                const start = new Date(file.scheduleStart);
+                const end = new Date(file.scheduleEnd);
+                
+                if (now >= start && now <= end) {
+                    const lines = file.text.split('\n');
+                    
+                    // Process file information (only once)
+                    if (!fileInfo) {
+                        for (let i = 0; i < lines.length; i++) {
+                            if (lines[i].trim() === '') break;
+                            fileInfo += lines[i] + '<br>';
+                        }
+                        fileInfoContainer.innerHTML = `<h2>File Information</h2>${fileInfo}`;
+                    }
+                    
+                    // Process schedules
+                    let currentSchedule = null;
+                    let scheduleContent = '';
+                    
+                    for (let i = fileInfo.split('<br>').length; i < lines.length; i++) {
+                        const line = lines[i].trim();
+                        if (line.startsWith('Start time:')) {
+                            if (currentSchedule) {
+                                scheduleElements.push(currentSchedule);
+                            }
+                            currentSchedule = {
+                                content: '',
+                                startTime: ''
+                            };
+                            scheduleContent = line + '<br>';
+                            currentSchedule.startTime = line.split(':')[1].trim();
+                        } else if (currentSchedule && line) {
+                            scheduleContent += line + '<br>';
+                        }
+                        if (currentSchedule) {
+                            currentSchedule.content = scheduleContent;
+                        }
+                    }
+                    if (currentSchedule) {
+                        scheduleElements.push(currentSchedule);
+                    }
+                }
+            });
+            
+            if (scheduleElements.length === 0) {
+                scheduledFilesContainer.innerHTML = '<div class="no-schedules">No files currently scheduled for display.</div>';
+                return;
+            }
+
+            // Sort schedules by start time
+            scheduleElements.sort((a, b) => {
+                const timeA = new Date('1970/01/01 ' + a.startTime).getTime();
+                const timeB = new Date('1970/01/01 ' + b.startTime).getTime();
+                return timeA - timeB;
+            });
+
+            // Create schedule elements
+            scheduleElements.forEach(schedule => {
+                const scheduleElement = document.createElement('div');
+                scheduleElement.className = 'schedule-container';
+                scheduleElement.innerHTML = schedule.content;
+                scheduledFilesContainer.appendChild(scheduleElement);
+            });
+        }
+
+        function initialize() {
+            updateCurrentTime();
+            displayScheduledFiles();
+            updateDuration();
+            setInterval(updateCurrentTime, 1000); // Update time every second
+            setInterval(updateDuration, 1000); // Update duration every second
+            setInterval(displayScheduledFiles, 60000); // Refresh displayed files every minute
+        }
+
+        initialize();
+    </script>
+</body>
+</html>

@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>PDF Extractor and Scheduler</title>
+
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.9.359/pdf.min.js"></script>
+
+</head>
+<body>
+    <div id="sidebarToggle">&#9776;</div> <!--&#9776; is the HTML entity code for the hamburger menu symbol(☰)-->
+    <div class="sidebar" id="sidebar">
+        <h1>WC, SABC</h1>
+        <h2>PDF Files</h2>
+        <input type="file" id="fileInput" accept=".pdf" multiple style="display:none;">
+        <button id="uploadBtn" class="sidebar-button">Upload File</button>
+        <button id="historyLogBtn" class="sidebar-button">History Log</button>
+        <button id="displayPageBtn" class="sidebar-button">Display Page</button>
+        <div id="historyLog" class="hidden"></div>
+        <ul id="fileList"></ul>
+        <button id="filterCtnBtn" class="sidebar-button">Filter CTN Schedules</button>
+        <button id="clearBtn" class="sidebar-button">Clear All</button>
+    </div>
+    <div class="main-content">
+        <h2 id="fileNameHeader"></h2>
+        <div id="scheduleControls" class="hidden schedule-form">
+            <div class="schedule-header">Schedule File Display Time</div>
+            <div class="schedule-inputs">
+                <div class="input-group">
+                    <label for="scheduleStart">Start Time:</label>
+                    <input type="text" id="scheduleStart" placeholder="Select start time">
+                </div>
+                <div class="input-group">
+                    <label for="scheduleEnd">End Time:</label>
+                    <input type="text" id="scheduleEnd" placeholder="Select end time">
+                </div>
+            </div>
+            <button id="scheduleBtn" class="schedule-button">Schedule File</button>
+        </div>
+        <pre id="extractedText"></pre>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
